@@ -162,6 +162,13 @@ services:
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
       source install/setup.bash &&
+      if [ \"${RMW:-}\" = \"zenoh\" ]; then
+      echo 'Waiting for Zenoh router on tcp://127.0.0.1:7447 ...' &&
+      for i in $(seq 1 60); do
+      (echo > /dev/tcp/127.0.0.1/7447) >/dev/null 2>&1 && break;
+      sleep 1;
+      done;
+      fi &&
       export ROS_NETWORK_INTERFACE=${ROS_NETWORK_INTERFACE:-lo} &&
       RMW=${RMW:-} source src/crisp_controllers_demos/scripts/setup_middleware.sh &&
       ros2 launch crisp_controllers_robot_demos franka.launch.py

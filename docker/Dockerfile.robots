@@ -1,6 +1,6 @@
 ARG ROS_DISTRO=humble
 ARG CRISP_CONTROLLERS_VERSION=1.1.0
- 
+
 FROM osrf/ros:${ROS_DISTRO}-desktop AS base
 
 ENV ROS_DISTRO=${ROS_DISTRO}
@@ -75,7 +75,7 @@ WORKDIR /home/ros
 
 ENV MUJOCO_VERSION=${MUJOCO_VERSION}
 
-RUN sudo apt update && sudo apt-get install -y libglfw3-dev wget \ 
+RUN sudo apt update && sudo apt-get install -y libglfw3-dev wget \
     && wget https://github.com/google-deepmind/mujoco/releases/download/$MUJOCO_VERSION/mujoco-$MUJOCO_VERSION-linux-x86_64.tar.gz \
     && tar -xzf mujoco-${MUJOCO_VERSION}-linux-x86_64.tar.gz -C "/home/ros"
 
@@ -86,11 +86,13 @@ FROM base AS franka
 # NOTE: it would be better to do separate builds for each repo but for testing this is enough
 # NOTE: There are still some bugs in the latest versions, for now using this commit
 # === FRANKA ROS2 ===
-RUN git clone https://github.com/danielsanjosepro/franka_ros2.git src/franka_ros2 \
+RUN git clone --branch $ROS_DISTRO --depth 1 https://github.com/danielsanjosepro/franka_ros2.git src/franka_ros2 \
     && cd src/franka_ros2 \
     && cd /home/ros/ros2_ws \
     && source /opt/ros/humble/setup.bash \
     && sudo apt-get update \
+    && sed -i 's#url: https://github.com/frankaemika/libfranka.git#url: https://github.com/frankarobotics/libfranka.git#' src/franka_ros2/franka.repos \
+    && sed -i 's#version: 0.15.0#version: 0.19.0#' src/franka_ros2/franka.repos \
     && vcs import src < src/franka_ros2/franka.repos --recursive --skip-existing \
     && rosdep update \
     && rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y \
@@ -100,7 +102,7 @@ RUN git clone https://github.com/danielsanjosepro/franka_ros2.git src/franka_ros
 FROM base AS kinova
 
 # === KINOVA ===
-RUN git clone https://github.com/Kinovarobotics/ros2_kortex.git src/ros2_kortex \
+RUN git clone --branch $ROS_DISTRO --depth 1 https://github.com/Kinovarobotics/ros2_kortex.git src/ros2_kortex \
     && source /opt/ros/$ROS_DISTRO/setup.bash \
     # We dont need this for now
     # && vcs import src < src/ros2_kortex/ros2_kortex.${ROS_DISTRO}.repos --recursive --skip-existing \
@@ -133,9 +135,9 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash \
     && source /home/ros/ros2_ws/install/setup.bash \
     && sudo apt update \
     && rosdep update \
-    && rosdep install -q --from-paths src --ignore-src -y \ 
+    && rosdep install -q --from-paths src --ignore-src -y \
     && colcon build --symlink-install \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select crisp_controllers crisp_mujoco_sim crisp_controllers_robot_demos franka_force_feedback_controllers
+        --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select crisp_controllers crisp_mujoco_sim crisp_controllers_robot_demos franka_broadcasters
 
 
 FROM kinova AS kinova-overlay
@@ -150,7 +152,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash \
     && source /home/ros/ros2_ws/install/setup.bash \
     && sudo apt update \
     && rosdep update \
-    && rosdep install -q --from-paths src --ignore-src -y \ 
+    && rosdep install -q --from-paths src --ignore-src -y \
     && colcon build --symlink-install \
         --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select crisp_controllers crisp_mujoco_sim crisp_controllers_robot_demos
 
@@ -167,7 +169,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash \
     && source /home/ros/ros2_ws/install/setup.bash \
     && sudo apt update \
     && rosdep update \
-    && rosdep install -q --from-paths src --ignore-src -y \ 
+    && rosdep install -q --from-paths src --ignore-src -y \
     && colcon build --symlink-install \
         --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select crisp_controllers crisp_mujoco_sim crisp_controllers_robot_demos
 

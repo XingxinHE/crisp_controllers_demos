@@ -10,3 +10,8 @@ This repo provides Docker containers to provide directly test the [crisp_control
 
 Check the [docs](https://utiasdsl.github.io/crisp_controllers/misc/demos/) on how to get started with the demos and with CRISP in general.
 
+
+
+RMW=cyclone ROS_NETWORK_INTERFACE=lo docker compose up --build launch_franka
+or
+RMW=cyclone ROS_NETWORK_INTERFACE=lo docker compose up launch_franka
