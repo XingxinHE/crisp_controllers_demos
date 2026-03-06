@@ -12,6 +12,29 @@ Check the [docs](https://utiasdsl.github.io/crisp_controllers/misc/demos/) on ho
 
 
 
-RMW=cyclone ROS_NETWORK_INTERFACE=lo docker compose up --build launch_franka
+RMW=cyclone ROS_NETWORK_INTERFACE=lo ROS_DOMAIN_ID=100 docker compose up --build launch_franka
 or
-RMW=cyclone ROS_NETWORK_INTERFACE=lo docker compose up launch_franka
+RMW=cyclone ROS_NETWORK_INTERFACE=lo ROS_DOMAIN_ID=100 docker compose up launch_franka
+
+## SpaceMouse teleop (with `franka_spacemouse`)
+
+After launching `launch_franka`, switch controllers so Cartesian teleop can command
+`target_pose`:
+
+```bash
+docker compose exec launch_franka bash -lc "cd /home/ros/ros2_ws && source /opt/ros/humble/setup.bash && source install/setup.bash && export RMW=cyclone && export ROS_NETWORK_INTERFACE=lo && export ROS_DOMAIN_ID=100 && source ./src/crisp_controllers_demos/scripts/setup_middleware.sh && ros2 control switch_controllers --deactivate joint_trajectory_controller --activate cartesian_impedance_controller"
+```
+
+Then, from `franka_spacemouse`, run:
+
+```bash
+export RMW=cyclone
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export ROS_NETWORK_INTERFACE=lo
+export ROS_DOMAIN_ID=100
+export CYCLONEDDS_URI=file://$PWD/config/cyclone_config.xml
+
+cd ../franka_spacemouse
+pixi run build
+pixi run bash -lc "source install/setup.bash && ros2 launch spacemouse_publisher spacemouse_publisher.launch.py config_file:=example_crisp_controllers_demo_fr3.yaml"
+```
